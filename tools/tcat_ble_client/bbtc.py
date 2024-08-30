@@ -49,9 +49,10 @@ async def main():
     logging.basicConfig(level=logging.WARNING)
 
     parser = argparse.ArgumentParser(description='Device parameters')
+    parser.add_argument('-a', '--adapter', help='Select HCI adapter')
     parser.add_argument('--debug', help='Enable debug logs', action='store_true')
     parser.add_argument('--info', help='Enable info logs', action='store_true')
-    parser.add_argument('--cert_path', help='Path to certificate chain and key', action='store', default='auth')
+    parser.add_argument('--cert-path', help='Path to certificate chain and key', action='store', default='auth')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--mac', type=str, help='Device MAC address', action='store')
     group.add_argument('--name', type=str, help='Device name', action='store')
@@ -123,7 +124,10 @@ async def get_device_by_args(args):
         device = await ble_scanner.find_first_by_name(args.name)
         device = await BleStream.create(device.address, BBTC_SERVICE_UUID, BBTC_TX_CHAR_UUID, BBTC_RX_CHAR_UUID)
     elif args.scan:
-        tcat_devices = await ble_scanner.scan_tcat_devices()
+        kwargs = {}
+        if args.adapter:
+            kwargs["adapter"] = args.adapter
+        tcat_devices = await ble_scanner.scan_tcat_devices(**kwargs)
         device = select_device_by_user_input(tcat_devices)
         if device:
             device = await BleStream.create(device.address, BBTC_SERVICE_UUID, BBTC_TX_CHAR_UUID, BBTC_RX_CHAR_UUID)
