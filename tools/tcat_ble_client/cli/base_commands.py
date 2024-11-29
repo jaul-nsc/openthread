@@ -177,7 +177,8 @@ class GetCommissionerCertificate(BleCommand):
         return 'Get commissioner certificate from device.'
 
     def prepare_data(self, args, context):
-        return TLV(TcatTLVType.GET_COMMISSIONER_CERTIFICATE.value, bytes()).to_bytes()
+        return TLV(TcatTLVType.GET_COMMISSIONER_CERTIFICATE
+        .value, bytes()).to_bytes()
 
 
 class GetDeviceIdCommand(BleCommand):

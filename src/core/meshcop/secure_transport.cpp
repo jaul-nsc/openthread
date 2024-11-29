@@ -1232,28 +1232,33 @@ exit:
 #if defined(MBEDTLS_SSL_KEEP_PEER_CERTIFICATE)
 Error SecureTransport::Extension::GetPeerCertificateDer(uint8_t *aPeerCert, size_t *aCertLength, size_t aCertBufferSize)
 {
-    Error          error   = kErrorNone;
-    SecureSession *session = mSecureTransport.mSessions.GetHead();
+    Error error = kErrorNone;
 
-    VerifyOrExit(session->IsConnected(), error = kErrorInvalidState);
+    VerifyOrExit(mSecureTransport.IsSessionConnected(), error = kErrorInvalidState);
 
 #if (MBEDTLS_VERSION_NUMBER >= 0x03010000)
-    VerifyOrExit(session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.len < aCertBufferSize,
+    VerifyOrExit(mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.len < aCertBufferSize,
                  error = kErrorNoBufs);
 
-    *aCertLength = session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.len;
-    memcpy(aPeerCert, session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.p, *aCertLength);
+    *aCertLength = mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.len;
+    memcpy(aPeerCert, mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->raw.p, *aCertLength);
 
 #else
-    VerifyOrExit(
-        session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len) <
-            aCertBufferSize,
-        error = kErrorNoBufs);
+    VerifyOrExit(mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)
+                         ->MBEDTLS_PRIVATE(peer_cert)
+                         ->MBEDTLS_PRIVATE(raw)
+                         .MBEDTLS_PRIVATE(len) < aCertBufferSize,
+                 error = kErrorNoBufs);
 
-    *aCertLength =
-        session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(len);
+    *aCertLength = mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)
+                       ->MBEDTLS_PRIVATE(peer_cert)
+                       ->MBEDTLS_PRIVATE(raw)
+                       .MBEDTLS_PRIVATE(len);
     memcpy(aPeerCert,
-           session->mSsl.MBEDTLS_PRIVATE(session)->MBEDTLS_PRIVATE(peer_cert)->MBEDTLS_PRIVATE(raw).MBEDTLS_PRIVATE(p),
+           mSecureTransport.mSsl.MBEDTLS_PRIVATE(session)
+               ->MBEDTLS_PRIVATE(peer_cert)
+               ->MBEDTLS_PRIVATE(raw)
+               .MBEDTLS_PRIVATE(p),
            *aCertLength);
 #endif
 

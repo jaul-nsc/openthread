@@ -32,6 +32,7 @@
  */
 
 #include "tcat_agent.hpp"
+#include <openthread/platform/settings.h>
 #include "common/code_utils.hpp"
 
 #if OPENTHREAD_CONFIG_BLE_TCAT_ENABLE
@@ -513,11 +514,11 @@ exit:
 
 Error TcatAgent::HandleSetActiveOperationalDataset(const Message &aIncomingMessage, uint16_t aOffset, uint16_t aLength)
 {
-    Dataset     dataset;
-    OffsetRange offsetRange;
-    Error       error;
-    uint8_t     buf[kCommissionerCertMaxLength];
-    size_t      bufLen = sizeof(buf);
+    Dataset       dataset;
+    OffsetRange   offsetRange;
+    Error         error;
+    unsigned char buf[kCommissionerCertMaxLength];
+    size_t        bufLen = sizeof(buf);
 
     offsetRange.Init(aOffset, aLength);
     SuccessOrExit(error = dataset.SetFrom(aIncomingMessage, offsetRange));
@@ -534,6 +535,52 @@ Error TcatAgent::HandleSetActiveOperationalDataset(const Message &aIncomingMessa
     Get<Settings>().SaveTcatCommissionerCertificate(buf, static_cast<uint16_t>(bufLen));
 
     Get<ActiveDatasetManager>().SaveLocal(dataset);
+
+    SuccessOrExit(error = Get<Ble::BleSecure>().GetPeerCertificateDer(buf, &bufLen, bufLen));
+    Get<Settings>().SaveTcatCommissionerCertificate(buf, static_cast<uint16_t>(bufLen));
+exit:
+    return error;
+}
+
+Error TcatAgent::HandleGetActiveOperationalDataset(Message &aOutgoingMessage, bool &aResponse)
+{
+    Error         error = kErrorNone;
+    Dataset       dataset;
+    Dataset::Tlvs datasetTlvs;
+
+    if (!CheckCommandClassAuthorizationFlags(mCommissionerAuthorizationField.mCommissioningFlags,
+                                             mDeviceAuthorizationField.mCommissioningFlags, &dataset))
+    {
+        error = kErrorRejected;
+        ExitNow();
+    }
+
+    SuccessOrExit(error = Get<ActiveDatasetManager>().Read(datasetTlvs));
+    SuccessOrExit(
+        error = Tlv::AppendTlv(aOutgoingMessage, kTlvResponseWithPayload, datasetTlvs.mTlvs, datasetTlvs.mLength));
+    aResponse = true;
+
+exit:
+    return error;
+}
+
+Error TcatAgent::HandleGetCommissionerCertificate(Message &aOutgoingMessage, bool &aResponse)
+{
+    Error         error = kErrorNone;
+    Dataset       dataset;
+    unsigned char buf[kCommissionerCertMaxLength];
+    uint16_t      bufLen = sizeof(buf);
+
+    if (!CheckCommandClassAuthorizationFlags(mCommissionerAuthorizationField.mCommissioningFlags,
+                                             mDeviceAuthorizationField.mCommissioningFlags, &dataset))
+    {
+        error = kErrorRejected;
+        ExitNow();
+    }
+
+    VerifyOrExit(kErrorNone == Get<Settings>().GetTcatCommissionerCertificate(buf, bufLen), error = kErrorInvalidState);
+    SuccessOrExit(error = Tlv::AppendTlv(aOutgoingMessage, kTlvResponseWithPayload, buf, bufLen));
+    aResponse = true;
 
 exit:
     return error;
@@ -598,14 +645,14 @@ Error TcatAgent::HandleDecomission(void)
         ExitNow();
     }
 
-    SuccessOrExit(error = Get<Ble::BleSecure>().GetPeerCertificateDer(buf, &bufLen, bufLen));
-    Get<Settings>().SaveTcatCommissionerCertificate(buf, static_cast<uint16_t>(bufLen));
-
     IgnoreReturnValue(otThreadSetEnabled(&GetInstance(), false));
     Get<ActiveDatasetManager>().Clear();
     Get<PendingDatasetManager>().Clear();
 
     IgnoreReturnValue(Get<Instance>().ErasePersistentInfo());
+
+    SuccessOrExit(error = Get<Ble::BleSecure>().GetPeerCertificateDer(buf, &bufLen, bufLen));
+    Get<Settings>().SaveTcatCommissionerCertificate(buf, (uint16_t)bufLen);
 
 #if !OPENTHREAD_CONFIG_PLATFORM_KEY_REFERENCES_ENABLE
     {
@@ -614,7 +661,6 @@ Error TcatAgent::HandleDecomission(void)
         Get<KeyManager>().SetNetworkKey(networkKey);
     }
 #endif
-
 exit:
     return error;
 }

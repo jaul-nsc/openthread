@@ -33,6 +33,8 @@
 
 #include "settings.hpp"
 
+#include "common/code_utils.hpp"
+#include "common/error.hpp"
 #include "instance/instance.hpp"
 
 namespace ot {
@@ -151,25 +153,25 @@ const char *SettingsBase::ActionToString(Action aAction)
 const char *SettingsBase::KeyToString(Key aKey)
 {
     static const char *const kKeyStrings[] = {
-        "",                  // (0)  (Unused)
-        "ActiveDataset",     // (1)  kKeyActiveDataset
-        "PendingDataset",    // (2)  kKeyPendingDataset
-        "NetworkInfo",       // (3)  kKeyNetworkInfo
-        "ParentInfo",        // (4)  kKeyParentInfo
-        "ChildInfo",         // (5)  kKeyChildInfo
-        "",                  // (6)  Removed (previously auto-start).
-        "SlaacIidSecretKey", // (7)  kKeySlaacIidSecretKey
-        "DadInfo",           // (8)  kKeyDadInfo
-        "",                  // (9)  Removed (previously OMR prefix).
-        "",                  // (10) Removed (previously on-link prefix).
-        "SrpEcdsaKey",       // (11) kKeySrpEcdsaKey
-        "SrpClientInfo",     // (12) kKeySrpClientInfo
-        "SrpServerInfo",     // (13) kKeySrpServerInfo
-        "",                  // (14) Removed (previously NAT64 prefix)
-        "BrUlaPrefix",       // (15) kKeyBrUlaPrefix
-        "BrOnLinkPrefixes",  // (16) kKeyBrOnLinkPrefixes
-        "BorderAgentId",     // (17) kKeyBorderAgentId
-        "TcatCommrCert"      // (18) kKeyTcatCommrCert
+        "",                           // (0)  (Unused)
+        "ActiveDataset",              // (1)  kKeyActiveDataset
+        "PendingDataset",             // (2)  kKeyPendingDataset
+        "NetworkInfo",                // (3)  kKeyNetworkInfo
+        "ParentInfo",                 // (4)  kKeyParentInfo
+        "ChildInfo",                  // (5)  kKeyChildInfo
+        "",                           // (6)  Removed (previously auto-start).
+        "SlaacIidSecretKey",          // (7)  kKeySlaacIidSecretKey
+        "DadInfo",                    // (8)  kKeyDadInfo
+        "",                           // (9)  Removed (previously OMR prefix).
+        "",                           // (10) Removed (previously on-link prefix).
+        "SrpEcdsaKey",                // (11) kKeySrpEcdsaKey
+        "SrpClientInfo",              // (12) kKeySrpClientInfo
+        "SrpServerInfo",              // (13) kKeySrpServerInfo
+        "",                           // (14) Removed (previously NAT64 prefix)
+        "BrUlaPrefix",                // (15) kKeyBrUlaPrefix
+        "BrOnLinkPrefixes",           // (16) kKeyBrOnLinkPrefixes
+        "BorderAgentId",              // (17) kKeyBorderAgentId
+        "TcatCommissionerCertificate" // (18) kKeyTcatCommissionerCertificate
     };
 
     struct EnumCheck
@@ -193,10 +195,10 @@ const char *SettingsBase::KeyToString(Key aKey)
         ValidateNextEnum(kKeyBrUlaPrefix);
         ValidateNextEnum(kKeyBrOnLinkPrefixes);
         ValidateNextEnum(kKeyBorderAgentId);
-        ValidateNextEnum(kKeyTcatCommrCert);
+        ValidateNextEnum(kKeyTcatCommissionerCertificate);
     };
 
-    static_assert(kLastKey == kKeyTcatCommrCert, "kLastKey is not valid");
+    static_assert(kLastKey == kKeyTcatCommissionerCertificate, "kLastKey is not valid");
 
     OT_ASSERT(aKey <= kLastKey);
 
@@ -268,13 +270,13 @@ void Settings::DeleteOperationalDataset(MeshCoP::Dataset::Type aType)
 #if OPENTHREAD_CONFIG_BLE_TCAT_ENABLE
 void Settings::SaveTcatCommissionerCertificate(uint8_t *aCert, uint16_t aCertLen)
 {
-    Error error = Get<SettingsDriver>().Set(kKeyTcatCommrCert, aCert, aCertLen);
+    Error error = Get<SettingsDriver>().Set(kKeyTcatCommissionerCertificate, aCert, aCertLen);
 
-    Log(kActionSave, error, kKeyTcatCommrCert);
+    Log(kActionSave, error, kKeyTcatCommissionerCertificate);
 
     SuccessOrAssert(error);
 }
-#endif
+#endif // OPENTHREAD_CONFIG_BLE_TCAT_ENABLE
 
 #if OPENTHREAD_FTD
 Error Settings::AddChildInfo(const ChildInfo &aChildInfo)
